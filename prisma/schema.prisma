@@ -1,0 +1,523 @@
+// asyst-cms — skema data. Acuan: CONTENT_SCHEMA.md
+// Konvensi:
+//  - Field terlokalisasi disimpan sebagai Json { "id": "...", "en": "..." } (L<...>).
+//  - Struktur bersarang (hero, sections/blok, faq, detail) disimpan sebagai Json dan divalidasi Zod
+//    di src/content/**.
+//  - Referensi media di dalam Json disimpan sebagai string mediaId dan di-resolve oleh API publik.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+// ─────────────── Enum ───────────────
+
+enum Role {
+  ADMIN
+  EDITOR
+}
+
+enum Status {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum Vocabulary {
+  NEWS_CATEGORY
+  PRODUCT_CATEGORY
+  JOB_DEPARTMENT
+  JOB_EXPERIENCE
+  JOB_LOCATION
+  JOB_EMPLOYMENT_TYPE
+  JOB_SKILL
+  CASE_INDUSTRY
+  CASE_SOLUTION
+  CASE_TECHNOLOGY
+  TAG
+}
+
+enum ClientPlacement {
+  HOME_TRUSTED
+  ABOUT
+  SOLUTION
+  AUXOSHIFT
+  CASE_STUDY
+}
+
+enum TestimonialPlacement {
+  CASE_STUDY
+  AUXOSHIFT
+}
+
+enum ProductTemplate {
+  BLOCKS
+  CLASSIC
+  LEGACY_API
+}
+
+enum SolutionTemplate {
+  BLOCKS
+  SOC
+}
+
+enum IndustryTemplate {
+  BLOCKS
+  AVIATION
+}
+
+enum FormSource {
+  CONTACT_US
+  ASK_ASYST
+  CAREER_APPLY
+}
+
+enum SubmissionStatus {
+  NEW
+  IN_PROGRESS
+  CLOSED
+}
+
+enum SingletonKey {
+  SITE_SETTINGS
+  NAVIGATION
+  FOOTER
+  UI_STRINGS
+  ASK_ASYST_FORM
+  HOME
+  ABOUT
+  CONTACT
+  NEWS_PAGE
+  CAREER
+  CAREER_JOBS
+  CAREER_JOB_DETAIL
+  CASE_STUDY_PAGE
+  PRODUCT_LANDING
+  SOLUTION_LANDING
+  INDUSTRY_LANDING
+  NOT_FOUND
+  SEARCH
+}
+
+// ─────────────── Auth ───────────────
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  name         String
+  passwordHash String
+  role         Role      @default(EDITOR)
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  uploads      Media[]
+}
+
+// ─────────────── Fondasi ───────────────
+
+model Media {
+  id           String   @id @default(cuid())
+  url          String   @db.VarChar(1024)
+  pathname     String   @unique @db.VarChar(512)
+  filename     String   @db.VarChar(255)
+  mimeType     String
+  size         Int
+  width        Int?
+  height       Int?
+  alt          Json
+  caption      Json?
+  focalPoint   Json?
+  uploadedById String?
+  uploadedBy   User?    @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  newsCovers        NewsArticle[] @relation("NewsCover")
+  caseCards         CaseStudy[]   @relation("CaseCard")
+  productCards      Product[]     @relation("ProductCard")
+  clientLogos       Client[]      @relation("ClientLogo")
+  clientLogosColor  Client[]      @relation("ClientLogoColor")
+  testimonialPhotos Testimonial[]
+  awardImages       Award[]
+  leaderPhotos      Leader[]
+  authorAvatars     Author[]
+
+  @@index([createdAt(sort: Desc)])
+}
+
+model Term {
+  id         String     @id @default(cuid())
+  vocabulary Vocabulary
+  key        String
+  label      Json
+  order      Int        @default(0)
+  isPopular  Boolean    @default(false)
+  searchText String     @default("") @db.VarChar(4000)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  newsCategory      NewsArticle[] @relation("NewsCategory")
+  newsTags          NewsArticle[] @relation("NewsTags")
+  jobDepartment     Job[]         @relation("JobDepartment")
+  jobExperience     Job[]         @relation("JobExperience")
+  jobEmploymentType Job[]         @relation("JobEmploymentType")
+  jobLocation       Job[]         @relation("JobLocation")
+  jobSkills         Job[]         @relation("JobSkills")
+  caseIndustry      CaseStudy[]   @relation("CaseIndustry")
+  caseSolution      CaseStudy[]   @relation("CaseSolution")
+  caseTechnologies  CaseStudy[]   @relation("CaseTechnologies")
+  caseTags          CaseStudy[]   @relation("CaseTags")
+  productHome       Product[]     @relation("ProductHomeCategory")
+
+  @@unique([vocabulary, key])
+  @@index([vocabulary, order])
+}
+
+model Office {
+  id           String   @id @default(cuid())
+  title        Json
+  addressLines Json
+  mapUrl       String?  @db.VarChar(1024)
+  order        Int      @default(0)
+  searchText   String   @default("") @db.VarChar(4000)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Client {
+  id          String   @id @default(cuid())
+  name        String
+  logoId      String
+  logo        Media    @relation("ClientLogo", fields: [logoId], references: [id], onDelete: Restrict)
+  logoColorId String?
+  logoColor   Media?   @relation("ClientLogoColor", fields: [logoColorId], references: [id], onDelete: SetNull)
+  website     String?  @db.VarChar(1024)
+  placements  Json // ClientPlacement[] (MySQL tidak punya kolom array)
+  isActive    Boolean  @default(true)
+  order       Int      @default(0)
+  searchText  String   @default("") @db.VarChar(4000)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  caseStudies  CaseStudy[]
+  testimonials Testimonial[]
+  solutions    Solution[]    @relation("SolutionClients")
+
+  @@index([isActive, order])
+}
+
+model Testimonial {
+  id          String    @id @default(cuid())
+  name        String
+  role        Json
+  company     String?
+  clientId    String?
+  client      Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  quote       Json
+  photoId     String?
+  photo       Media?    @relation(fields: [photoId], references: [id], onDelete: SetNull)
+  placements  Json // TestimonialPlacement[]
+  status      Status    @default(DRAFT)
+  publishedAt DateTime?
+  order       Int       @default(0)
+  searchText  String    @default("") @db.VarChar(4000)
+  createdById String?
+  updatedById String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status, order])
+}
+
+model Award {
+  id         String   @id @default(cuid())
+  title      Json
+  subtitle   Json
+  imageId    String?
+  image      Media?   @relation(fields: [imageId], references: [id], onDelete: SetNull)
+  year       Int?
+  order      Int      @default(0)
+  searchText String   @default("") @db.VarChar(4000)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Leader {
+  id         String   @id @default(cuid())
+  name       String
+  position   Json
+  photoId    String
+  photo      Media    @relation(fields: [photoId], references: [id], onDelete: Restrict)
+  linkedin   String?  @db.VarChar(1024)
+  order      Int      @default(0)
+  searchText String   @default("") @db.VarChar(4000)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Author {
+  id         String        @id @default(cuid())
+  name       String
+  avatarId   String?
+  avatar     Media?        @relation(fields: [avatarId], references: [id], onDelete: SetNull)
+  bio        Json?
+  order      Int           @default(0)
+  searchText String        @default("") @db.VarChar(4000)
+  articles   NewsArticle[]
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+}
+
+model PageSeo {
+  id         String   @id @default(cuid())
+  path       String   @unique @db.VarChar(512)
+  seo        Json
+  order      Int      @default(0)
+  searchText String   @default("") @db.VarChar(4000)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// ─────────────── Konten dinamis ───────────────
+
+model NewsArticle {
+  id           String    @id @default(cuid())
+  slug         String    @unique
+  legacyId     String?   @unique
+  title        Json
+  excerpt      Json
+  content      Json
+  coverImageId String
+  coverImage   Media     @relation("NewsCover", fields: [coverImageId], references: [id], onDelete: Restrict)
+  categoryId   String
+  category     Term      @relation("NewsCategory", fields: [categoryId], references: [id], onDelete: Restrict)
+  tags         Term[]    @relation("NewsTags")
+  authorId     String?
+  author       Author?   @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  isFeatured   Boolean   @default(false)
+  seo          Json?
+  status       Status    @default(DRAFT)
+  publishedAt  DateTime?
+  order        Int       @default(0)
+  searchText   String    @default("") @db.VarChar(4000)
+  createdById  String?
+  updatedById  String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([status, publishedAt(sort: Desc)])
+}
+
+model Job {
+  id               String    @id @default(cuid())
+  slug             String    @unique
+  title            Json
+  summary          Json
+  departmentId     String
+  department       Term      @relation("JobDepartment", fields: [departmentId], references: [id], onDelete: Restrict)
+  experienceId     String
+  experience       Term      @relation("JobExperience", fields: [experienceId], references: [id], onDelete: Restrict)
+  employmentTypeId String
+  employmentType   Term      @relation("JobEmploymentType", fields: [employmentTypeId], references: [id], onDelete: Restrict)
+  locationId       String
+  location         Term      @relation("JobLocation", fields: [locationId], references: [id], onDelete: Restrict)
+  skills           Json?
+  tags             Term[]    @relation("JobSkills")
+  about            Json
+  responsibilities Json
+  requirements     Json
+  applyUrl         String?   @db.VarChar(1024)
+  postedDate       DateTime  @db.Date
+  closingDate      DateTime? @db.Date
+  status           Status    @default(DRAFT)
+  publishedAt      DateTime?
+  order            Int       @default(0)
+  searchText       String    @default("") @db.VarChar(4000)
+  createdById      String?
+  updatedById      String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([status, postedDate(sort: Desc)])
+}
+
+model CaseStudy {
+  id           String      @id @default(cuid())
+  slug         String      @unique
+  title        Json
+  clientId     String?
+  client       Client?     @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  cardImageId  String
+  cardImage    Media       @relation("CaseCard", fields: [cardImageId], references: [id], onDelete: Restrict)
+  industryId   String
+  industry     Term        @relation("CaseIndustry", fields: [industryId], references: [id], onDelete: Restrict)
+  solutionId   String
+  solution     Term        @relation("CaseSolution", fields: [solutionId], references: [id], onDelete: Restrict)
+  technologies Term[]      @relation("CaseTechnologies")
+  tags         Term[]      @relation("CaseTags")
+  detail       Json?
+  related      CaseStudy[] @relation("CaseRelated")
+  relatedBy    CaseStudy[] @relation("CaseRelated")
+  seo          Json?
+  status       Status      @default(DRAFT)
+  publishedAt  DateTime?
+  order        Int         @default(0)
+  searchText   String      @default("") @db.VarChar(4000)
+  createdById  String?
+  updatedById  String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([status, order])
+}
+
+// ─────────────── Produk / Solusi / Industri ───────────────
+
+model ProductCategory {
+  id              String                   @id @default(cuid())
+  key             String                   @unique
+  label           Json
+  shortLabel      Json?
+  title           Json
+  description     Json
+  menuTitle       Json?
+  menuDescription Json?
+  button          Json?
+  order           Int                      @default(0)
+  searchText      String                   @default("") @db.VarChar(4000)
+  products        ProductCategoryProduct[]
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+}
+
+model ProductCategoryProduct {
+  categoryId String
+  category   ProductCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  order      Int             @default(0)
+
+  @@id([categoryId, productId])
+}
+
+model Product {
+  id               String                   @id @default(cuid())
+  slug             String                   @unique
+  name             String
+  tagline          Json
+  shortDescription Json
+  cardImageId      String
+  cardImage        Media                    @relation("ProductCard", fields: [cardImageId], references: [id], onDelete: Restrict)
+  categories       ProductCategoryProduct[]
+  homeCategoryId   String?
+  homeCategory     Term?                    @relation("ProductHomeCategory", fields: [homeCategoryId], references: [id], onDelete: SetNull)
+  featuredOnHome   Boolean                  @default(false)
+  template         ProductTemplate          @default(BLOCKS)
+  hero             Json
+  sections         Json?
+  classic          Json?
+  legacy           Json?
+  faq              Json?
+  cta              Json?
+  seo              Json
+  searchKeywords   Json?
+  status           Status                   @default(DRAFT)
+  publishedAt      DateTime?
+  order            Int                      @default(0)
+  searchText       String                   @default("") @db.VarChar(4000)
+  createdById      String?
+  updatedById      String?
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+
+  @@index([status, order])
+}
+
+model Solution {
+  id             String           @id @default(cuid())
+  slug           String           @unique
+  menuLabel      Json
+  menuIcon       String?
+  template       SolutionTemplate @default(BLOCKS)
+  hero           Json
+  sections       Json?
+  soc            Json?
+  clients        Client[]         @relation("SolutionClients")
+  faq            Json?
+  cta            Json?
+  seo            Json
+  searchKeywords Json?
+  status         Status           @default(DRAFT)
+  publishedAt    DateTime?
+  order          Int              @default(0)
+  searchText     String           @default("") @db.VarChar(4000)
+  createdById    String?
+  updatedById    String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([status, order])
+}
+
+model Industry {
+  id             String           @id @default(cuid())
+  slug           String           @unique
+  menuLabel      Json
+  menuIcon       String?
+  template       IndustryTemplate @default(BLOCKS)
+  hero           Json
+  sections       Json?
+  aviation       Json?
+  faq            Json?
+  cta            Json?
+  seo            Json
+  searchKeywords Json?
+  status         Status           @default(DRAFT)
+  publishedAt    DateTime?
+  order          Int              @default(0)
+  searchText     String           @default("") @db.VarChar(4000)
+  createdById    String?
+  updatedById    String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([status, order])
+}
+
+// ─────────────── Singleton & Form ───────────────
+
+model Singleton {
+  key         SingletonKey @id
+  draft       Json
+  published   Json?
+  publishedAt DateTime?
+  updatedById String?
+  updatedAt   DateTime     @updatedAt
+}
+
+model FormSubmission {
+  id        String           @id @default(cuid())
+  source    FormSource
+  topic     String?
+  fullName  String
+  email     String
+  company   String
+  jobTitle  String?
+  phone     String?
+  subject   String?          @db.VarChar(255)
+  message   String           @db.Text
+  pageUrl   String?          @db.VarChar(1000)
+  language  String?
+  status    SubmissionStatus @default(NEW)
+  notes     String?          @db.Text
+  ipHash    String?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@index([source, status, createdAt(sort: Desc)])
+}

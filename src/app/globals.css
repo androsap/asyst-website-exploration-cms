@@ -1,0 +1,284 @@
+/* Atlas — ASYST Design System. Token inti (warna, elevation, tipografi, size)
+   disalin dari github.com/androsap/atlas-design-system → src/styles/tokens.css. */
+@import "../styles/tokens.css";
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ─────────────── Pemetaan token Atlas → variabel komponen ─────────────── */
+:root {
+  /* Surface & teks (semantic Atlas) */
+  --background: var(--neutral25); /* surface.neutral.weak — latar aplikasi */
+  --foreground: var(--neutral900); /* typography.neutral.strong */
+  --card: var(--neutral0);
+  --card-foreground: var(--neutral900);
+  --popover: var(--neutral0);
+  --popover-foreground: var(--neutral900);
+
+  /* Brand */
+  --primary: var(--primary500);
+  --primary-foreground: var(--neutral0);
+  --secondary: var(--neutral50);
+  --secondary-foreground: var(--neutral900);
+  --accent: var(--primary50); /* hover/active item: surface.primary.weak */
+  --accent-foreground: var(--primary700);
+  --muted: var(--neutral50);
+  --muted-foreground: var(--neutral500);
+  --destructive: var(--danger500);
+
+  /* Border & fokus */
+  --border: var(--neutral100); /* border.neutral.default */
+  --input: var(--neutral200); /* border.neutral.medium — field */
+  --ring: var(--primary300);
+
+  /* Sidebar */
+  --sidebar: var(--neutral0);
+  --sidebar-foreground: var(--neutral700);
+  --sidebar-primary: var(--primary500);
+  --sidebar-primary-foreground: var(--neutral0);
+  --sidebar-accent: var(--primary50);
+  --sidebar-accent-foreground: var(--primary700);
+  --sidebar-border: var(--neutral100);
+  --sidebar-ring: var(--primary300);
+
+  /* Alias lama (dipakai beberapa komponen CMS) → palet primary Atlas */
+  --brand-50: var(--primary50);
+  --brand-100: var(--primary100);
+  --brand-700: var(--primary700);
+
+  /* Semantic "accent-subtle" & link (sama dengan globals Atlas) */
+  --surface-accent-subtle: var(--primary50);
+  --text-link: var(--primary500);
+
+  --chart-1: var(--primary500);
+  --chart-2: var(--secondary500);
+  --chart-3: var(--info500);
+  --chart-4: var(--warning500);
+  --chart-5: var(--danger500);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-inter), "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-manrope), "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-sans);
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-brand-50: var(--brand-50);
+  --color-brand-100: var(--brand-100);
+  --color-brand-700: var(--brand-700);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+
+  /* Radius dari alias border Atlas (3xs=4, 2xs=8, xs=12, sm=16, lg=24) */
+  --radius-sm: var(--border3xs);
+  --radius-md: var(--border2xs);
+  --radius-lg: var(--border2xs);
+  --radius-xl: var(--borderXs);
+  --radius-2xl: var(--borderSm);
+  --radius-3xl: var(--borderLg);
+  --radius-4xl: var(--borderXl);
+
+  /* Elevation Atlas: level1 kartu, level2 dropdown, level3 popover/tooltip, level4 modal */
+  --shadow-xs: var(--level1);
+  --shadow-sm: var(--level1);
+  --shadow-md: var(--level2);
+  --shadow-lg: var(--level3);
+  --shadow-xl: var(--level4);
+  --shadow-2xl: var(--level4);
+}
+
+/* ─────────────── Gaya teks Atlas (typography scale) ─────────────── */
+@utility text-display-lg {
+  font: var(--displayLg);
+  font-family: var(--font-display);
+  letter-spacing: var(--letterSpacing0);
+}
+@utility text-display-md {
+  font: var(--displayMd);
+  font-family: var(--font-display);
+  letter-spacing: var(--letterSpacing1);
+}
+@utility text-heading-lg {
+  font: var(--headingLg);
+  font-family: var(--font-sans);
+  letter-spacing: var(--letterSpacing2);
+}
+@utility text-heading-md {
+  font: var(--headingMd);
+  font-family: var(--font-sans);
+  letter-spacing: var(--letterSpacing3);
+}
+@utility text-heading-sm {
+  font: var(--headingSm);
+  font-family: var(--font-sans);
+  letter-spacing: var(--letterSpacing4);
+}
+@utility text-title-md {
+  font: var(--titleMd);
+  font-family: var(--font-sans);
+  letter-spacing: var(--letterSpacing5);
+}
+@utility text-title-sm {
+  font: var(--titleSm);
+  font-family: var(--font-sans);
+  letter-spacing: var(--letterSpacing6);
+}
+@utility text-subtitle-md {
+  font: var(--subtitleMd);
+  font-family: var(--font-sans);
+  letter-spacing: var(--letterSpacing7);
+}
+@utility text-subtitle-sm {
+  font: var(--subtitleSm);
+  font-family: var(--font-sans);
+  letter-spacing: var(--letterSpacing8);
+}
+@utility text-body-lg {
+  font: var(--bodyLg);
+  font-family: var(--font-sans);
+}
+@utility text-body-md {
+  font: var(--bodyMd);
+  font-family: var(--font-sans);
+}
+@utility text-body-sm {
+  font: var(--bodySm);
+  font-family: var(--font-sans);
+}
+@utility text-label-md {
+  font: var(--labelMd);
+  font-family: var(--font-sans);
+}
+@utility text-label-sm {
+  font: var(--labelSm);
+  font-family: var(--font-sans);
+}
+@utility text-caption-md {
+  font: var(--captionMd);
+  font-family: var(--font-sans);
+}
+@utility text-caption-sm {
+  font: var(--captionSm);
+  font-family: var(--font-sans);
+}
+@utility text-overline {
+  font: var(--overlineBase);
+  font-family: var(--font-sans);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+
+/* Scrollbar tipis (sama dengan Atlas) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--neutral200) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track,
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+*::-webkit-scrollbar-button {
+  display: none;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: var(--neutral200);
+  border: 2px solid transparent;
+  border-radius: 9999px;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--neutral300);
+}
+
+/* Chevron <select> native (ikon lucide ChevronDown, warna neutral400) */
+.atlas-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23898c94' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+}
+
+/* Tipografi isi rich text (editor & preview) */
+.prose-cms {
+  @apply text-body-sm text-[var(--neutral800)];
+}
+.prose-cms > * + * {
+  @apply mt-3;
+}
+.prose-cms h2 {
+  @apply text-title-sm text-[var(--neutral900)];
+}
+.prose-cms h3 {
+  @apply text-subtitle-md text-[var(--neutral900)];
+}
+.prose-cms h4 {
+  @apply text-subtitle-sm text-[var(--neutral900)];
+}
+.prose-cms ul {
+  @apply list-disc pl-5;
+}
+.prose-cms ol {
+  @apply list-decimal pl-5;
+}
+.prose-cms blockquote {
+  @apply border-l-4 border-[var(--primary200)] pl-3 text-[var(--neutral600)] italic;
+}
+.prose-cms a {
+  @apply text-[var(--text-link)] underline;
+}
+.prose-cms hr {
+  @apply my-4 border-border;
+}
+.prose-cms code {
+  @apply rounded bg-muted px-1 font-mono text-xs;
+}

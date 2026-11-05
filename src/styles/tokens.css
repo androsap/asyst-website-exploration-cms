@@ -1,0 +1,225 @@
+/**
+ * Do not edit directly, this file was auto-generated.
+ */
+
+:root {
+  --neutral0: #ffffff;
+  --neutral25: #f8f9fd;
+  --neutral50: #eff1f8;
+  --neutral100: #e1e4ea;
+  --neutral150: #d2d5dc;
+  --neutral200: #bcc0c7;
+  --neutral300: #a2a6ae;
+  --neutral400: #898c94;
+  --neutral500: #70727b;
+  --neutral600: #565961;
+  --neutral700: #404145;
+  --neutral800: #2a2c32;
+  --neutral900: #1c1e26;
+  --neutral950: #101218;
+  --primary50: #ebf5ff;
+  --primary100: #c2cbe4;
+  --primary200: #a5b2d7;
+  --primary300: #7c8fc4;
+  --primary400: #6279b9;
+  --primary500: #3b58a7;
+  --primary600: #365098;
+  --primary700: #2a3e77;
+  --primary800: #20305c;
+  --primary900: #192546;
+  --primary950: #10182d;
+  --secondary50: #e6f5f3;
+  --secondary100: #b0deda;
+  --secondary200: #8acfc8;
+  --secondary300: #54b9af;
+  --secondary400: #33aba0;
+  --secondary500: #009688;
+  --secondary600: #00897c;
+  --secondary700: #006b61;
+  --secondary800: #00534b;
+  --secondary900: #003f39;
+  --secondary950: #00332e;
+  --info50: #f0f7ff;
+  --info100: #d6eaff;
+  --info200: #add4ff;
+  --info300: #75b8ff;
+  --info400: #3d9bff;
+  --info500: #0a7aff;
+  --info600: #0062db;
+  --info700: #004db3;
+  --info800: #003a8a;
+  --info900: #002966;
+  --info950: #001a42;
+  --success50: #f0fdf4;
+  --success100: #dcfce7;
+  --success200: #bbf7d0;
+  --success300: #86efac;
+  --success400: #4ade80;
+  --success500: #22c55e;
+  --success600: #16a34a;
+  --success700: #15803d;
+  --success800: #166534;
+  --success900: #14532d;
+  --success950: #052e16;
+  --warning50: #fffbeb;
+  --warning100: #fef3c7;
+  --warning200: #fde68a;
+  --warning300: #fcd34d;
+  --warning400: #fbbf24;
+  --warning500: #f59e0b;
+  --warning600: #d97706;
+  --warning700: #b45309;
+  --warning800: #92400e;
+  --warning900: #78350f;
+  --warning950: #451a03;
+  --danger50: #fef2f2;
+  --danger100: #fee2e2;
+  --danger200: #fecaca;
+  --danger300: #fca5a5;
+  --danger400: #f87171;
+  --danger500: #ef4444;
+  --danger600: #dc2626;
+  --danger700: #b91c1c;
+  --danger800: #991b1b;
+  --danger900: #7f1d1d;
+  --danger950: #450a0a;
+  --level1: 0 2px 12px 0 #1c1e260a; /** Cards, panels. */
+  --level2: 0 4px 8px 0 #1c1e260f; /** Dropdowns, hovercards. */
+  --level3: 0 8px 12px 0 #1c1e2614; /** Popovers, tooltips. */
+  --level4: 0 12px 16px 0 #1c1e261f; /** Modals, dialogs. */
+  --fontFamiliesManrope: Manrope;
+  --fontFamiliesInter: Inter;
+  --lineHeights0: 120px;
+  --lineHeights1: 64px;
+  --lineHeights2: 56px;
+  --lineHeights3: 56px;
+  --lineHeights4: 42px;
+  --lineHeights5: 34px;
+  --lineHeights6: 28px;
+  --lineHeights7: 25px;
+  --lineHeights8: 22px;
+  --lineHeights9: 20px;
+  --lineHeights10: 28px;
+  --lineHeights11: 22px;
+  --lineHeights12: 20px;
+  --lineHeights13: 20px;
+  --lineHeights14: 17px;
+  --lineHeights15: 16px;
+  --lineHeights16: 14px;
+  --lineHeights17: 15px;
+  --fontWeightsManrope0: 700;
+  --fontWeightsInter1: 600;
+  --fontWeightsInter2: 400;
+  --fontWeightsInter3: 500;
+  --fontSize0: 10px;
+  --fontSize1: 11px;
+  --fontSize2: 12px;
+  --fontSize3: 14px;
+  --fontSize4: 16px;
+  --fontSize5: 18px;
+  --fontSize6: 20px;
+  --fontSize7: 24px;
+  --fontSize8: 32px;
+  --fontSize9: 40px;
+  --fontSize10: 48px;
+  --fontSize11: 56px;
+  --fontSize12: 112px;
+  --letterSpacing0: -0.012em;
+  --letterSpacing1: -0.008em;
+  --letterSpacing2: -0.006em;
+  --letterSpacing3: -0.0022em;
+  --letterSpacing4: -0.0021em;
+  --letterSpacing5: -0.0019em;
+  --letterSpacing6: -0.0017000000000000001em;
+  --letterSpacing7: -0.0014000000000000002em;
+  --letterSpacing8: -0.0011em;
+  --letterSpacing9: -0.0006em;
+  --letterSpacing10: 0.0017000000000000001em;
+  --letterSpacing11: 0.0011em;
+  --letterSpacing12: 0.0006em;
+  --letterSpacing13: 0em;
+  --letterSpacing14: 0.001em;
+  --letterSpacing15: 0.0005em;
+  --paragraphSpacing0: 0;
+  --textCaseNone: none;
+  --textCaseUppercase: uppercase;
+  --textDecorationNone: none;
+  --paragraphIndent0: 0px;
+  --size1: 1px;
+  --size2: 2px;
+  --size4: 4px;
+  --size8: 8px;
+  --size12: 12px;
+  --size16: 16px;
+  --size20: 20px;
+  --size24: 24px;
+  --size32: 32px;
+  --size40: 40px;
+  --size48: 48px;
+  --size56: 56px;
+  --size64: 64px;
+  --size72: 72px;
+  --size80: 80px;
+  --size96: 96px;
+  --size128: 128px;
+  --size160: 160px;
+  --size192: 192px;
+  --size224: 224px;
+  --size256: 256px;
+  --size320: 320px;
+  --size384: 384px;
+  --size512: 512px;
+  --size640: 640px;
+  --size768: 768px;
+  --sizeNull: 0;
+  --sizeMax: 999px;
+  --displayXl: 700 112px/120px Manrope; /** Display Extra Large */
+  --displayLg: 700 56px/64px Manrope; /** Display large */
+  --displayMd: 700 48px/56px Manrope; /** Display medium */
+  --headingLg: 600 40px/56px Inter; /** h1 */
+  --headingMd: 600 32px/42px Inter; /** h2 */
+  --headingSm: 600 24px/34px Inter; /** h3 */
+  --titleMd: 600 20px/28px Inter; /** Title medium for prominent titles */
+  --titleSm: 600 18px/25px Inter; /** Used for secondary titles or headings */
+  --subtitleMd: 600 16px/22px Inter; /** Subtitle medium Used for subtitles */
+  --subtitleSm: 600 14px/20px Inter; /** Subtitle small Used for smaller subtitles */
+  --bodyLg: 400 20px/28px Inter; /** Body large text for introductory paragraphs and highlighted content blocks */
+  --bodyMd: 400 16px/22px Inter; /** Body medium is the default text size for paragraphs and general content */
+  --bodySm: 400 14px/20px Inter; /** Body small for secondary information, table cells, and compact layouts */
+  --labelMd: 500 14px/20px Inter; /** Label Medium */
+  --labelSm: 500 12px/17px Inter; /** Label Small */
+  --captionMd: 400 12px/16px Inter; /** Caption text for supplementary information and metadata */
+  --captionSm: 400 10px/14px Inter; /** Caption text for supplementary information and metadata, but smaller */
+  --overlineBase: 500 11px/15px Inter; /** OVERLINE LABEL TEXT */
+  --spacingNull: var(--sizeNull);
+  --spacing4xs: var(--size2);
+  --spacing3xs: var(--size4);
+  --spacing2xs: var(--size8);
+  --spacingXs: var(--size12);
+  --spacingSm: var(--size16);
+  --spacingMd: var(--size20);
+  --spacingLg: var(--size24);
+  --spacingXl: var(--size32);
+  --spacing2xl: var(--size40);
+  --spacing3xl: var(--size48);
+  --spacing4xl: var(--size56);
+  --spacing5xl: var(--size64);
+  --spacing6xl: var(--size80);
+  --spacing7xl: var(--size96);
+  --spacing8xl: var(--size128);
+  --spacing9xl: var(--size256);
+  --spacingMax: var(--sizeMax);
+  --borderNull: var(--sizeNull);
+  --border4xs: var(--size2);
+  --border3xs: var(--size4);
+  --border2xs: var(--size8);
+  --borderXs: var(--size12);
+  --borderSm: var(--size16);
+  --borderMd: var(--size20);
+  --borderLg: var(--size24);
+  --borderXl: var(--size32);
+  --border2xl: var(--size40);
+  --border3xl: var(--size48);
+  --border4xl: var(--size56);
+  --borderFull: var(--sizeMax);
+}
