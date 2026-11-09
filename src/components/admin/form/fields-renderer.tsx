@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { Controller, useFieldArray, useFormContext, useWatch } from "react-hook-form";
-import { ArrowDown, ArrowUp, Check, ChevronDown, Copy, ImagePlus, Plus, Trash2, X } from "lucide-react";
+import { Check, ChevronDown, Copy, ImagePlus, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Chip } from "@/components/ui/chip";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { arrayMove } from "@dnd-kit/sortable";
+import { DragHandle, SortableArea, useSortableItem } from "./sortable";
 import { Textarea } from "@/components/ui/textarea";
 import {
   DropdownMenu,
@@ -18,7 +20,7 @@ import {
 import { cn } from "@/lib/utils";
 import { labelOf, LANGS, type Lang } from "@/lib/i18n";
 import { slugify } from "@/lib/slug";
-import { ICON_GROUPS } from "@/content/icons";
+import { ICON_GROUPS, ICON_KEYS } from "@/content/icons";
 import {
   blockFields,
   defaultsFor,
@@ -33,6 +35,7 @@ import { MediaPickerDialog } from "../media/media-picker";
 import { MediaThumb } from "../media/media-browser";
 import { putMedia, useMediaItems } from "../media/use-media";
 import { join, useEditLang } from "./context";
+import { ChoiceField } from "./choice-field";
 import { FieldShell, nativeSelectClass, useFieldError } from "./field-shell";
 import { RichTextEditor } from "./rich-text";
 import { useRefOptions } from "./ref-options";
@@ -307,12 +310,20 @@ function BoolInput({ name, field }: { name: string; field: Extract<Field, { kind
       control={control}
       name={name}
       render={({ field: f }) => (
-        <label className="flex items-start gap-3 text-sm">
-          <Switch id={name} checked={!!f.value} onCheckedChange={f.onChange} className="mt-0.5" />
-          <span>
-            <span className="font-medium">{field.label}</span>
-            {field.help && <span className="block text-xs text-muted-foreground">{field.help}</span>}
+        <label
+          htmlFor={name}
+          className={cn(
+            "flex cursor-pointer items-center justify-between gap-4 rounded-[var(--borderXs)] border px-4 py-3 text-sm transition-colors",
+            f.value
+              ? "border-[var(--primary200)] bg-[var(--primary50)]"
+              : "border-[var(--neutral200)] bg-[var(--neutral50)] hover:border-[var(--neutral300)]",
+          )}
+        >
+          <span className="min-w-0">
+            <span className="font-medium text-[var(--neutral900)]">{field.label}</span>
+            {field.help && <span className="mt-0.5 block text-xs text-[var(--neutral500)]">{field.help}</span>}
           </span>
+          <Switch id={name} checked={!!f.value} onCheckedChange={f.onChange} className="shrink-0" />
         </label>
       )}
     />
@@ -358,17 +369,24 @@ function DateInput({ name, field }: { name: string; field: Extract<Field, { kind
 }
 
 function SelectInput({ name, field }: { name: string; field: Extract<Field, { kind: "select" }> }) {
-  const { register } = useFormContext();
+  const { control } = useFormContext();
   return (
     <FieldShell name={name} label={field.label} required={field.required} help={field.help}>
-      <select id={name} className={cn(nativeSelectClass, "max-w-md")} {...register(name)}>
-        {!field.required || !field.default ? <option value="">— Pilih —</option> : null}
-        {field.options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
+      <Controller
+        control={control}
+        name={name}
+        render={({ field: f }) => (
+          <ChoiceField
+            id={name}
+            ariaLabel={field.label}
+            value={f.value ?? ""}
+            onChange={f.onChange}
+            emptyLabel={field.required ? undefined : "Tidak dipilih"}
+            options={field.options}
+            selectClassName="max-w-md"
+          />
+        )}
+      />
     </FieldShell>
   );
 }
@@ -409,11 +427,15 @@ function MultiSelectInput({ name, field }: { name: string; field: Extract<Field,
 }
 
 function IconInput({ name, field }: { name: string; field: Extract<Field, { kind: "icon" }> }) {
-  const { register } = useFormContext();
+  const { register, control } = useFormContext();
+  const current = useWatch({ control, name }) as string | undefined;
+  // Kunci di luar ICON_KEYS tetap ditampilkan agar tidak hilang saat form disimpan.
+  const unknown = !!current && !ICON_KEYS.includes(current);
   return (
     <FieldShell name={name} label={field.label} required={field.required} help={field.help ?? "Kunci ikon; frontend memetakan ke komponen."}>
       <select id={name} className={cn(nativeSelectClass, "max-w-md font-mono text-xs")} {...register(name)}>
         <option value="">— Tanpa ikon —</option>
+        {unknown && <option value={current}>{current} (tidak ada di daftar)</option>}
         {ICON_GROUPS.map((g) => (
           <optgroup key={g.label} label={g.label}>
             {g.keys.map((k) => (
@@ -524,8 +546,8 @@ function MediaValue({ id, onPick, onClear }: { id: string | null; onPick: () => 
           <Button type="button" size="xs" color="neutral" variant="secondary" onClick={onPick}>
             Ganti
           </Button>
-          <Button type="button" size="xs" color="neutral" variant="tertiary" onClick={onClear}>
-            <X /> Hapus
+          <Button type="button" size="xs" color="danger" variant="tertiary" onClick={onClear}>
+            <Trash2 /> Hapus
           </Button>
         </div>
       </div>
@@ -568,37 +590,57 @@ function MediaListInput({ name, field }: { name: string; field: Extract<Field, {
 
 function MediaListValue({ ids, onChange, onAdd }: { ids: string[]; onChange: (v: string[]) => void; onAdd: () => void }) {
   const items = useMediaItems(ids);
-  const move = (i: number, d: number) => {
-    const next = [...ids];
-    const [x] = next.splice(i, 1);
-    next.splice(i + d, 0, x);
-    onChange(next);
-  };
+  // Media yang sama boleh muncul dua kali → kunci sortable memakai indeks kemunculan.
+  const keys = ids.map((id, i) => `${id}#${ids.slice(0, i).filter((x) => x === id).length}`);
   return (
-    <div className="flex flex-wrap gap-2">
-      {ids.map((id, i) => (
-        <div key={`${id}-${i}`} className="group relative rounded-lg border p-1">
-          <MediaThumb item={items[id]} className="h-20 w-28" />
-          <div className="absolute inset-x-1 bottom-1 hidden justify-between rounded bg-background/90 p-0.5 group-hover:flex">
-            <Button type="button" size="icon-xs" color="neutral" variant="tertiary" disabled={i === 0} onClick={() => move(i, -1)} aria-label="Geser kiri">
-              <ArrowUp className="-rotate-90" />
-            </Button>
-            <Button type="button" size="icon-xs" color="neutral" variant="tertiary" onClick={() => onChange(ids.filter((_, j) => j !== i))} aria-label="Hapus">
-              <X />
-            </Button>
-            <Button type="button" size="icon-xs" color="neutral" variant="tertiary" disabled={i === ids.length - 1} onClick={() => move(i, 1)} aria-label="Geser kanan">
-              <ArrowDown className="-rotate-90" />
-            </Button>
-          </div>
-        </div>
-      ))}
-      <button
-        type="button"
-        onClick={onAdd}
-        className="flex h-[88px] w-[120px] flex-col items-center justify-center gap-1 rounded-[var(--borderXs)] border border-[var(--neutral200)] bg-[var(--neutral0)] text-caption-md text-[var(--neutral500)] transition-colors hover:border-[var(--primary500)] hover:bg-[var(--primary50)] hover:text-[var(--primary600)]"
-      >
-        <ImagePlus className="size-5" /> Tambah
-      </button>
+    <SortableArea ids={keys} onMove={(from, to) => onChange(arrayMove(ids, from, to))} layout="grid">
+      <div className="flex flex-wrap gap-2">
+        {ids.map((id, i) => (
+          <MediaListThumb
+            key={keys[i]}
+            sortId={keys[i]}
+            item={items[id]}
+            index={i}
+            onRemove={() => onChange(ids.filter((_, j) => j !== i))}
+          />
+        ))}
+        <button
+          type="button"
+          onClick={onAdd}
+          className="flex h-[88px] w-[120px] flex-col items-center justify-center gap-1 rounded-[var(--borderXs)] border border-[var(--neutral200)] bg-[var(--neutral0)] text-caption-md text-[var(--neutral500)] transition-colors hover:border-[var(--primary500)] hover:bg-[var(--primary50)] hover:text-[var(--primary600)]"
+        >
+          <ImagePlus className="size-5" /> Tambah
+        </button>
+      </div>
+    </SortableArea>
+  );
+}
+
+function MediaListThumb({
+  sortId,
+  item,
+  index,
+  onRemove,
+}: {
+  sortId: string;
+  item: Parameters<typeof MediaThumb>[0]["item"];
+  index: number;
+  onRemove: () => void;
+}) {
+  const { ref, style, isDragging, handle } = useSortableItem(sortId);
+  return (
+    <div
+      ref={ref}
+      style={style}
+      className={cn("group relative rounded-lg border bg-[var(--neutral0)] p-1", isDragging && "z-20 shadow-lg ring-1 ring-[var(--primary200)]")}
+    >
+      <MediaThumb item={item} className="h-20 w-28" />
+      <div className="absolute inset-x-1 bottom-1 hidden items-center justify-between rounded bg-background/90 p-0.5 group-focus-within:flex group-hover:flex">
+        <DragHandle handle={handle} label={`Geser gambar ${index + 1}`} />
+        <Button type="button" size="icon-xs" color="danger" variant="tertiary" onClick={onRemove} aria-label="Hapus">
+          <Trash2 />
+        </Button>
+      </div>
     </div>
   );
 }
@@ -613,23 +655,21 @@ function RefSingleInput({ name, field }: { name: string; field: RefField }) {
       <Controller
         control={control}
         name={name}
-        render={({ field: f }) => (
-          <select
-            id={name}
-            className={cn(nativeSelectClass, "max-w-md")}
-            value={f.value ?? ""}
-            onChange={(e) => f.onChange(e.target.value || null)}
-            disabled={!options}
-          >
-            <option value="">{options ? "— Tidak ada —" : "Memuat…"}</option>
-            {options?.map((o) => (
-              <option key={o.id} value={o.id}>
-                {o.label}
-                {o.hint ? ` (${o.hint})` : ""}
-              </option>
-            ))}
-          </select>
-        )}
+        render={({ field: f }) =>
+          options ? (
+            <ChoiceField
+              id={name}
+              ariaLabel={field.label}
+              value={f.value ?? ""}
+              onChange={(v) => f.onChange(v || null)}
+              emptyLabel="Tidak ada"
+              options={options.map((o) => ({ value: o.id, label: o.label, hint: o.hint ?? undefined }))}
+              selectClassName="max-w-md"
+            />
+          ) : (
+            <p className="py-1.5 text-sm text-muted-foreground">Memuat…</p>
+          )
+        }
       />
     </FieldShell>
   );
@@ -646,32 +686,22 @@ function RefMultiInput({ name, field }: { name: string; field: RefField }) {
         name={name}
         render={({ field: f }) => {
           const ids: string[] = f.value ?? [];
-          const move = (i: number, d: number) => {
-            const next = [...ids];
-            const [x] = next.splice(i, 1);
-            next.splice(i + d, 0, x);
-            f.onChange(next);
-          };
           return (
             <div className="space-y-2">
               {ids.length > 0 && (
-                <ul className="divide-y rounded-lg border">
-                  {ids.map((id, i) => (
-                    <li key={id} className="flex items-center gap-2 px-3 py-1.5 text-sm">
-                      <span className="w-5 text-xs text-muted-foreground">{i + 1}.</span>
-                      <span className="flex-1 truncate">{byId.get(id)?.label ?? (options ? "(data dihapus)" : "…")}</span>
-                      <Button type="button" size="icon-xs" color="neutral" variant="tertiary" disabled={i === 0} onClick={() => move(i, -1)} aria-label="Naik">
-                        <ArrowUp />
-                      </Button>
-                      <Button type="button" size="icon-xs" color="neutral" variant="tertiary" disabled={i === ids.length - 1} onClick={() => move(i, 1)} aria-label="Turun">
-                        <ArrowDown />
-                      </Button>
-                      <Button type="button" size="icon-xs" color="neutral" variant="tertiary" onClick={() => f.onChange(ids.filter((x) => x !== id))} aria-label="Hapus">
-                        <X />
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
+                <SortableArea ids={ids} onMove={(from, to) => f.onChange(arrayMove(ids, from, to))}>
+                  <ul className="divide-y rounded-lg border">
+                    {ids.map((id, i) => (
+                      <RefMultiRow
+                        key={id}
+                        id={id}
+                        index={i}
+                        label={byId.get(id)?.label ?? (options ? "(data dihapus)" : "…")}
+                        onRemove={() => f.onChange(ids.filter((x) => x !== id))}
+                      />
+                    ))}
+                  </ul>
+                </SortableArea>
               )}
               <select
                 className={cn(nativeSelectClass, "max-w-md")}
@@ -697,6 +727,24 @@ function RefMultiInput({ name, field }: { name: string; field: RefField }) {
   );
 }
 
+function RefMultiRow({ id, index, label, onRemove }: { id: string; index: number; label: string; onRemove: () => void }) {
+  const { ref, style, isDragging, handle } = useSortableItem(id);
+  return (
+    <li
+      ref={ref}
+      style={style}
+      className={cn("flex items-center gap-2 bg-[var(--neutral0)] py-1.5 pr-3 pl-1.5 text-sm", isDragging && "relative z-20 shadow-lg")}
+    >
+      <DragHandle handle={handle} label={`Geser ${label}`} />
+      <span className="w-5 text-xs text-muted-foreground">{index + 1}.</span>
+      <span className="flex-1 truncate">{label}</span>
+      <Button type="button" size="icon-xs" color="danger" variant="tertiary" onClick={onRemove} aria-label="Hapus">
+        <Trash2 />
+      </Button>
+    </li>
+  );
+}
+
 // ─────────────── Struktur ───────────────
 
 function Section({
@@ -706,6 +754,8 @@ function Section({
   defaultOpen = true,
   invalid,
   children,
+  handle,
+  sortable,
 }: {
   title: React.ReactNode;
   subtitle?: React.ReactNode;
@@ -713,11 +763,23 @@ function Section({
   defaultOpen?: boolean;
   invalid?: boolean;
   children: React.ReactNode;
+  /** Pegangan drag di kiri header (untuk item yang bisa diurutkan). */
+  handle?: React.ReactNode;
+  sortable?: { ref: (el: HTMLElement | null) => void; style: React.CSSProperties; isDragging: boolean };
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className={cn("rounded-[var(--border2xs)] border border-[var(--neutral100)] bg-[var(--neutral0)]", invalid && "border-[var(--danger300)]")}>
-      <div className="flex items-center gap-2 px-3 py-2">
+    <div
+      ref={sortable?.ref}
+      style={sortable?.style}
+      className={cn(
+        "rounded-[var(--border2xs)] border border-[var(--neutral100)] bg-[var(--neutral0)]",
+        invalid && "border-[var(--danger300)]",
+        sortable?.isDragging && "relative z-20 shadow-lg ring-1 ring-[var(--primary200)]",
+      )}
+    >
+      <div className={cn("flex items-center gap-2 py-2 pr-3", handle ? "pl-1.5" : "pl-3")}>
+        {handle}
         <button type="button" onClick={() => setOpen(!open)} className="flex min-w-0 flex-1 items-center gap-2 text-left">
           <ChevronDown className={cn("size-4 shrink-0 text-muted-foreground transition-transform", !open && "-rotate-90")} />
           <span className="truncate text-subtitle-sm text-[var(--neutral900)]">{title}</span>
@@ -787,25 +849,15 @@ function ItemTitle({ name, itemLabel, fallback }: { name: string; itemLabel?: st
 
 function ItemActions({
   index,
-  count,
-  move,
   remove,
   duplicate,
 }: {
   index: number;
-  count: number;
-  move: (from: number, to: number) => void;
   remove: (i: number) => void;
   duplicate: (i: number) => void;
 }) {
   return (
     <div className="flex shrink-0 items-center gap-0.5">
-      <Button type="button" size="icon-xs" color="neutral" variant="tertiary" disabled={index === 0} onClick={() => move(index, index - 1)} aria-label="Naik">
-        <ArrowUp />
-      </Button>
-      <Button type="button" size="icon-xs" color="neutral" variant="tertiary" disabled={index === count - 1} onClick={() => move(index, index + 1)} aria-label="Turun">
-        <ArrowDown />
-      </Button>
       <Button type="button" size="icon-xs" color="neutral" variant="tertiary" onClick={() => duplicate(index)} aria-label="Duplikat">
         <Copy />
       </Button>
@@ -822,6 +874,12 @@ function ItemActions({
   );
 }
 
+/** Section item array/blok yang bisa diseret lewat ikon ⠿ di kiri header. */
+function SortableSection({ id, dragLabel, ...props }: React.ComponentProps<typeof Section> & { id: string; dragLabel: string }) {
+  const { ref, style, isDragging, handle } = useSortableItem(id);
+  return <Section {...props} sortable={{ ref, style, isDragging }} handle={<DragHandle handle={handle} label={dragLabel} />} />;
+}
+
 function ArrayInput({ name, field }: { name: string; field: ArrayField }) {
   const { control, getValues, formState } = useFormContext();
   const { fields: items, append, remove, move, insert } = useFieldArray({ control, name, keyName: "_key" });
@@ -830,10 +888,13 @@ function ArrayInput({ name, field }: { name: string; field: ArrayField }) {
   return (
     <Section title={field.label} subtitle={`${items.length} item`} invalid={invalid}>
       {field.help && <p className="mb-3 text-xs text-muted-foreground">{field.help}</p>}
+      <SortableArea ids={items.map((it) => it._key)} onMove={move}>
       <div className="space-y-2">
         {items.map((item, i) => (
-          <Section
+          <SortableSection
             key={item._key}
+            id={item._key}
+            dragLabel={`Geser item ${i + 1}`}
             defaultOpen={items.length <= 2}
             invalid={hasNestedError(formState.errors, `${name}.${i}`)}
             title={<ItemTitle name={`${name}.${i}`} itemLabel={field.itemLabel} fallback={`Item ${i + 1}`} />}
@@ -841,17 +902,16 @@ function ArrayInput({ name, field }: { name: string; field: ArrayField }) {
             actions={
               <ItemActions
                 index={i}
-                count={items.length}
-                move={move}
                 remove={remove}
                 duplicate={(idx) => insert(idx + 1, structuredClone(getValues(`${name}.${idx}`)))}
               />
             }
           >
             <FieldsRenderer fields={field.fields} prefix={`${name}.${i}`} />
-          </Section>
+          </SortableSection>
         ))}
       </div>
+      </SortableArea>
       {error && <p className="mt-2 text-xs font-medium text-destructive">{error}</p>}
       <Button
         type="button"
@@ -874,14 +934,17 @@ function BlocksInput({ name, field }: { name: string; field: BlocksField }) {
   return (
     <Section title={field.label} subtitle={`${items.length} blok`} invalid={hasNestedError(formState.errors, name)}>
       {field.help && <p className="mb-3 text-xs text-muted-foreground">{field.help}</p>}
+      <SortableArea ids={items.map((it) => it._key)} onMove={move}>
       <div className="space-y-2">
         {items.map((item, i) => {
           const type = (item as unknown as { type: string }).type;
           const def = field.blocks[type];
           if (!def) return null;
           return (
-            <Section
+            <SortableSection
               key={item._key}
+              id={item._key}
+              dragLabel={`Geser blok ${def.label}`}
               defaultOpen={false}
               invalid={hasNestedError(formState.errors, `${name}.${i}`)}
               title={
@@ -894,18 +957,17 @@ function BlocksInput({ name, field }: { name: string; field: BlocksField }) {
               actions={
                 <ItemActions
                   index={i}
-                  count={items.length}
-                  move={move}
                   remove={remove}
                   duplicate={(idx) => insert(idx + 1, structuredClone(getValues(`${name}.${idx}`)))}
                 />
               }
             >
               <FieldsRenderer fields={blockFields(def)} prefix={`${name}.${i}`} />
-            </Section>
+            </SortableSection>
           );
         })}
       </div>
+      </SortableArea>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button type="button" color="neutral" variant="secondary" size="sm" className="mt-3">

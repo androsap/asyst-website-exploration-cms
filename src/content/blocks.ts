@@ -21,6 +21,13 @@ const groupItem: Fields = {
   items: f.llist("Item"),
 };
 
+/** Grup per langkah di blok `steps` (website: SolutionDetailGroup → label, teks opsional, poin). */
+const stepGroupItem: Fields = {
+  label: f.l("Label grup", { required: true }),
+  text: f.lt("Teks"),
+  points: f.llist("Poin"),
+};
+
 export const BLOCKS: Record<string, BlockDef> = {
   intro: {
     label: "Intro",
@@ -92,7 +99,7 @@ export const BLOCKS: Record<string, BlockDef> = {
         {
           title: f.l("Judul", { required: true }),
           description: desc(),
-          highlight: f.bool("Highlight"),
+          highlight: f.l("Highlight", { help: "Kalimat singkat dengan ikon centang di bawah deskripsi. Opsional." }),
           points: f.llist("Poin"),
           icon: f.icon(),
         },
@@ -189,7 +196,7 @@ export const BLOCKS: Record<string, BlockDef> = {
           label: f.l("Label", { required: true }),
           title: f.l("Judul"),
           description: desc(),
-          groups: f.array("Grup", groupItem, { itemLabel: "title" }),
+          groups: f.array("Grup", stepGroupItem, { itemLabel: "label" }),
         },
         { itemLabel: "label" },
       ),

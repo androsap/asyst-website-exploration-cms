@@ -4,11 +4,11 @@ import { getCollection } from "@/content/collections";
 import { labelOf, parseLang } from "@/lib/i18n";
 import { serializeRecords } from "@/server/public/serialize";
 import { getItem } from "@/server/repo/collections";
-import { requirePageUser } from "@/server/session";
+import { requirePageModule } from "@/server/admin-menu";
 
 export default async function PreviewCollectionPage({ params, searchParams }: PageProps<"/admin/preview/c/[type]/[id]">) {
-  await requirePageUser();
   const { type, id } = await params;
+  await requirePageModule(`c:${type}`);
   const lang = parseLang((await searchParams).lang as string | undefined);
   const def = getCollection(type);
   if (!def) notFound();

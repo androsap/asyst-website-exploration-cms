@@ -47,7 +47,6 @@ export function AdminShell({
 }) {
   const [open, setOpen] = useState(false);
   const [pwOpen, setPwOpen] = useState(false);
-  const isAdmin = user.role === "ADMIN";
 
   return (
     <AdminConfigProvider value={config}>
@@ -55,7 +54,7 @@ export function AdminShell({
       <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-[var(--neutral100)] bg-sidebar lg:flex">
         <Brand />
         <div className="flex-1 overflow-y-auto">
-          <SidebarNav groups={groups} isAdmin={isAdmin} />
+          <SidebarNav groups={groups} />
         </div>
       </aside>
 
@@ -63,7 +62,7 @@ export function AdminShell({
         <SheetContent side="left" className="w-72 overflow-y-auto bg-sidebar p-0">
           <SheetTitle className="sr-only">Navigasi</SheetTitle>
           <Brand />
-          <SidebarNav groups={groups} isAdmin={isAdmin} onNavigate={() => setOpen(false)} />
+          <SidebarNav groups={groups} onNavigate={() => setOpen(false)} />
         </SheetContent>
       </Sheet>
 
@@ -86,7 +85,7 @@ export function AdminShell({
               <DropdownMenuLabel className="tracking-normal normal-case">
                 <div className="text-subtitle-sm text-[var(--neutral900)]">{user.name}</div>
                 <div className="text-caption-md font-normal text-[var(--neutral500)]">
-                  {user.email} · {user.role}
+                  {user.email} · {user.roleName}
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />

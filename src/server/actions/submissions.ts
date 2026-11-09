@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/server/session";
+import { requireModule } from "@/server/admin-menu";
 import { run } from "./result";
 
 const schema = z.object({
@@ -13,7 +13,7 @@ const schema = z.object({
 
 export async function updateSubmissionAction(id: string, input: unknown) {
   return run(async () => {
-    await requireUser();
+    await requireModule("sys:submissions", "update");
     const data = schema.parse(input);
     await prisma.formSubmission.update({ where: { id }, data });
     revalidatePath("/admin/submissions", "layout");
@@ -22,7 +22,7 @@ export async function updateSubmissionAction(id: string, input: unknown) {
 
 export async function deleteSubmissionAction(id: string) {
   return run(async () => {
-    await requireUser("ADMIN");
+    await requireModule("sys:submissions", "delete");
     await prisma.formSubmission.delete({ where: { id } });
     revalidatePath("/admin/submissions", "layout");
   });

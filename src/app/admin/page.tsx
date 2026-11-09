@@ -9,11 +9,15 @@ import { labelOf } from "@/lib/i18n";
 import { prisma } from "@/lib/prisma";
 import { delegate } from "@/server/repo/collections";
 import { requirePageUser } from "@/server/session";
+import { canDo } from "@/server/admin-menu";
 
 export default async function DashboardPage({ searchParams }: PageProps<"/admin">) {
   const user = await requirePageUser();
   const forbidden = (await searchParams).forbidden;
-  const main = COLLECTIONS.filter((c) => ["news", "jobs", "case-studies", "products", "solutions", "industries"].includes(c.type));
+  const candidates = COLLECTIONS.filter((c) => ["news", "jobs", "case-studies", "products", "solutions", "industries"].includes(c.type));
+  const visible = await Promise.all(candidates.map((c) => canDo(user, `c:${c.type}`)));
+  const main = candidates.filter((_, i) => visible[i]);
+  const canSubmissions = await canDo(user, "sys:submissions");
 
   const [stats, recent, newSubmissions] = await Promise.all([
     Promise.all(
@@ -39,7 +43,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/admin"
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       {forbidden && (
-        <p className="rounded-md bg-[var(--warning50)] px-4 py-2 text-sm text-[var(--warning700)]">Halaman tersebut hanya untuk ADMIN.</p>
+        <p className="rounded-md bg-[var(--warning50)] px-4 py-2 text-sm text-[var(--warning700)]">Role Anda tidak punya izin untuk membuka halaman tersebut.</p>
       )}
       <div>
         <h1 className="text-heading-sm text-[var(--neutral900)]">Halo, {user.name.split(" ")[0]} 👋</h1>
@@ -65,6 +69,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/admin"
             </Card>
           </Link>
         ))}
+        {canSubmissions && (
         <Link href="/admin/submissions?status=NEW">
           <Card className="transition-colors hover:border-primary/50">
             <CardContent className="flex items-center gap-3 pt-0">
@@ -78,6 +83,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/admin"
             </CardContent>
           </Card>
         </Link>
+        )}
       </div>
 
       <Card>

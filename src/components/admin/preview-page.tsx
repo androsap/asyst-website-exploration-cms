@@ -4,6 +4,7 @@ import type { Lang } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { PreviewObject } from "./preview-renderer";
+import { LangFlag } from "./lang-flag";
 
 export function PreviewPage({
   title,
@@ -35,8 +36,12 @@ export function PreviewPage({
             <Link
               key={l}
               href={`${basePath}?lang=${l}`}
-              className={cn("rounded-md px-3 py-1", lang === l ? "bg-primary text-primary-foreground" : "hover:bg-muted")}
+              className={cn(
+                "inline-flex items-center gap-2 rounded-md px-3 py-1",
+                lang === l ? "bg-primary text-primary-foreground" : "hover:bg-muted",
+              )}
             >
+              <LangFlag lang={l} />
               {l === "id" ? "Indonesia" : "English"}
             </Link>
           ))}

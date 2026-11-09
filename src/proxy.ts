@@ -16,9 +16,7 @@ export default auth((req) => {
       url.searchParams.set("callbackUrl", pathname + search);
       return NextResponse.redirect(url);
     }
-    if (pathname.startsWith("/admin/users") && user.role !== "ADMIN") {
-      return NextResponse.redirect(new URL("/admin?forbidden=1", req.nextUrl));
-    }
+    // Hak akses per modul diperiksa di page/action (role & izin dibaca dari DB).
   }
 
   if (pathname === "/login" && user && !req.nextUrl.searchParams.has("expired")) {

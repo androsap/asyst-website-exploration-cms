@@ -16,11 +16,6 @@ datasource db {
 
 // ─────────────── Enum ───────────────
 
-enum Role {
-  ADMIN
-  EDITOR
-}
-
 enum Status {
   DRAFT
   PUBLISHED
@@ -105,12 +100,29 @@ enum SingletonKey {
 
 // ─────────────── Auth ───────────────
 
+// Role dinamis (halaman Manajemen Role). permissions = { "<moduleId>": ["view","create","update","delete","publish"] }
+// — lihat src/lib/permissions.ts. isSuperAdmin = akses penuh tanpa melihat permissions.
+model Role {
+  id           String   @id @default(cuid())
+  key          String   @unique @db.VarChar(64)
+  name         String   @db.VarChar(80)
+  description  String?  @db.VarChar(255)
+  isSuperAdmin Boolean  @default(false)
+  isSystem     Boolean  @default(false)
+  permissions  Json
+  order        Int      @default(0)
+  users        User[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
 model User {
   id           String    @id @default(cuid())
   email        String    @unique
   name         String
   passwordHash String
-  role         Role      @default(EDITOR)
+  roleKey      String    @db.VarChar(64)
+  role         Role      @relation(fields: [roleKey], references: [key], onDelete: Restrict, onUpdate: Cascade)
   isActive     Boolean   @default(true)
   lastLoginAt  DateTime?
   createdAt    DateTime  @default(now())
@@ -498,6 +510,14 @@ model Singleton {
   publishedAt DateTime?
   updatedById String?
   updatedAt   DateTime     @updatedAt
+}
+
+// Pengaturan panel admin (key-value). Saat ini: "admin-menu" = struktur sidebar (src/lib/admin-menu.ts).
+model AdminSetting {
+  key         String   @id @db.VarChar(64)
+  value       Json
+  updatedById String?
+  updatedAt   DateTime @updatedAt
 }
 
 model FormSubmission {

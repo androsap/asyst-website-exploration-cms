@@ -618,7 +618,9 @@ const products: CollectionDef = {
     shortDescription: f.lt("Deskripsi singkat", { required: true }),
     cardImageId: f.media("Gambar kartu", { required: true }),
     homeCategoryId: f.ref("Kategori filter Home", "terms", { vocabulary: "PRODUCT_CATEGORY" }),
-    featuredOnHome: f.bool("Tampilkan di Home"),
+    featuredOnHome: f.bool("Tampilkan di Home", {
+      help: "Aktifkan agar produk ini muncul di section Produk pada halaman Home. Tab tempat produk tampil mengikuti \"Kategori filter Home\" di atas.",
+    }),
     template: f.select(
       "Template",
       [
@@ -820,6 +822,7 @@ const industries: CollectionDef = {
               description: f.lt("Deskripsi"),
               capabilities: f.llist("Kapabilitas"),
               value: f.l("Value", { multiline: true }),
+              image: f.media("Gambar", { help: "Opsional. Kosongkan untuk memakai gambar bawaan website." }),
             },
             { itemLabel: "label" },
           ),

@@ -47,3 +47,6 @@ next-env.d.ts
 
 # upload lokal (fallback tanpa Vercel Blob)
 /public/uploads
+
+
+.claude

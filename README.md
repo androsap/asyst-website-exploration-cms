@@ -78,7 +78,7 @@ npm run dev                 # http://localhost:3000 → /login
 - Semua contoh data melewati validasi Zod yang sama dengan form admin, jadi seed sekaligus menjadi tes registry konten.
 - Gambar contoh memakai placeholder dari `placehold.co`.
 
-Skrip lain: `npm run db:studio` (Prisma Studio), `npm run typecheck`, `npm run lint`, `npm run build`.
+Skrip lain: `npm run db:import-web` (impor konten asli website, lihat [Impor konten asli website](#impor-konten-asli-website)), `npm run db:seed-news` (berita dummy untuk pengembangan: 9 terbit + 1 draf, sampul foto dari `../asyst-web` yang di-crop 16:9 dan diberi color grading seragam; butuh hasil `db:import-web`; hapus lagi dengan `NEWS_DUMMY_REMOVE=true`), `npm run db:studio` (Prisma Studio), `npm run typecheck`, `npm run lint`, `npm run build`.
 
 ### Environment
 
@@ -119,6 +119,15 @@ Sehari-hari:
 | `docker rm -f asyst-mysql && docker volume rm asyst-mysql-data` | Hapus total (data ikut hilang) |
 
 Data tersimpan di volume `asyst-mysql-data`, jadi aman walau container dihapus/dibuat ulang (selama volume tidak dihapus).
+
+### Troubleshooting
+
+| Gejala | Penyebab & solusi |
+|---|---|
+| Login selalu "Email atau password salah" padahal benar | Biasanya **database tidak bisa diakses** (Auth.js menyamarkan semua error login). Pastikan Docker Desktop & container `asyst-mysql` berjalan (`docker ps`), lalu **restart `npm run dev`**. Cek akun dengan Prisma Studio (tabel `User`). Reset password: `SEED_ADMIN_RESET_PASSWORD=true npm run db:seed` |
+| `RSA public key is not available client side` / `pool failed to retrieve a connection` | MySQL 8 (`caching_sha2_password`) tanpa TLS. Sudah ditangani otomatis (`allowPublicKeyRetrieval` aktif bila tanpa SSL); pastikan memakai versi `src/lib/prisma.ts` terbaru & restart dev server. Di production gunakan `?ssl=true` |
+| `localhost:5555` *refused to connect* | Prisma Studio belum dijalankan. Jalankan `npm run db:studio` dan biarkan terminalnya terbuka |
+| Studio: *Could not load schema metadata* | Server MariaDB 10.4 (mis. XAMPP). Gunakan MySQL 8 (Docker di atas) |
 
 ### Mengakses database
 
@@ -164,6 +173,25 @@ const { data, meta } = await res.json();
 - Ikon dikirim sebagai **kunci string** (CONTENT_SCHEMA §2.4). Frontend memetakan kunci tersebut ke komponen React.
 - Untuk sitemap dan `initialize/index.cjs`, ambil slug dari `/api/public/news`, `/jobs`, `/case-studies` (pakai yang `hasDetail: true`), `/products`, `/solutions`, dan `/industries` dengan `?limit=100&page=N`.
 - Form Contact Us dan Ask ASYST cukup `POST` ke `/api/forms/contact-us` atau `/api/forms/ask-asyst` (lihat API.md).
+- Dev website berjalan di `http://localhost:3006`; origin ini harus ada di `ALLOWED_ORIGINS` (tanpanya form mendapat `403 origin_not_allowed`).
+
+### Impor konten asli website
+
+Konten asli website diekspor oleh `npm run export:cms` di `../asyst-web` ke `../asyst-web/cms-export/asyst-content.json`, lalu diimpor ke CMS:
+
+```bash
+IMPORT_DRY_RUN=true npm run db:import-web   # validasi saja, tidak menulis apa pun
+IMPORT_RESET=true   npm run db:import-web   # impor pertama: hapus data contoh seed, lalu impor
+npm run db:import-web                       # impor ulang / update (idempoten, tidak menduplikasi)
+```
+
+PowerShell: `$env:IMPORT_RESET="true"; npm run db:import-web` (hapus lagi dengan `Remove-Item Env:IMPORT_RESET`).
+
+- Semua item melewati validasi Zod dan sanitasi yang sama dengan form admin. Item yang gagal dilaporkan di ringkasan akhir dan exit code menjadi ≠ 0.
+- Record dicocokkan dengan natural key: `vocabulary+key` untuk term, `slug` untuk produk, solusi, industri, lowongan, dan studi kasus, `name` untuk klien, testimoni, penulis, dan pimpinan, `key` untuk kategori produk, dan judul EN untuk kantor dan penghargaan. Yang sudah ada di-update; urutan tampil disamakan dengan file.
+- Media disalin ke `public/uploads/asyst-web/…`. Bila `BLOB_READ_WRITE_TOKEN` diisi, media diunggah ke Vercel Blob `asyst-web/…`. Record `Media` di-upsert berdasarkan `pathname`.
+- Env opsional: `ASYST_WEB_DIR` (default `../asyst-web`) dan `IMPORT_FILE`.
+- **Perhatian:** impor menimpa perubahan yang dibuat editor di admin untuk item yang ada di file ekspor.
 
 ---
 

@@ -13,6 +13,8 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
+    "db:import-web": "tsx prisma/import-asyst-web.ts",
+    "db:seed-news": "tsx prisma/seed-news.ts",
     "db:studio": "prisma studio"
   },
   "dependencies": {

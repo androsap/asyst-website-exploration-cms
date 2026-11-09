@@ -6,6 +6,7 @@ import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { nativeSelectClass } from "./form/field-shell";
+import { RADIO_MAX_OPTIONS } from "./form/choice-field";
 
 type Filter = { field: string; label: string; options: { value: string; label: string }[] };
 
@@ -58,7 +59,27 @@ export function ListToolbar({ hasStatus, filters = [] }: { hasStatus?: boolean; 
           ))}
         </div>
       )}
-      {filters.map((flt) => (
+      {filters.map((flt) =>
+        flt.options.length < RADIO_MAX_OPTIONS ? (
+          <div key={flt.field} role="radiogroup" aria-label={flt.label} className="flex flex-wrap items-center rounded-lg border p-0.5 text-sm">
+            <span className="px-2 text-xs text-muted-foreground">{flt.label}</span>
+            {[{ value: "", label: "Semua" }, ...flt.options].map((o) => {
+              const active = (params.get(flt.field) ?? "") === o.value;
+              return (
+                <button
+                  key={o.value || "__all"}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => update({ [flt.field]: o.value || null })}
+                  className={cn("rounded-md px-2.5 py-1", active ? "bg-primary text-primary-foreground" : "hover:bg-muted")}
+                >
+                  {o.label}
+                </button>
+              );
+            })}
+          </div>
+        ) : (
         <select
           key={flt.field}
           aria-label={flt.label}
@@ -73,7 +94,8 @@ export function ListToolbar({ hasStatus, filters = [] }: { hasStatus?: boolean; 
             </option>
           ))}
         </select>
-      ))}
+        ),
+      )}
     </div>
   );
 }

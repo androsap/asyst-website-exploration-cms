@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
+import { requirePageModule } from "@/server/admin-menu";
 import { MediaLibrary } from "./media-library";
 
 export const metadata: Metadata = { title: "Media" };
 
-export default function MediaPage() {
+export default async function MediaPage() {
+  await requirePageModule("sys:media");
   return (
     <div className="mx-auto max-w-6xl space-y-5">
       <div>

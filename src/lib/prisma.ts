@@ -11,7 +11,12 @@ export function poolConfigFromUrl(raw: string) {
     throw new Error("DATABASE_URL harus diawali mysql:// (atau mariadb://)");
   }
   const sslParam = url.searchParams.get("ssl") ?? url.searchParams.get("sslmode") ?? url.searchParams.get("sslaccept");
-  const ssl = sslParam && !["false", "0", "disable", "disabled"].includes(sslParam.toLowerCase());
+  const ssl = !!sslParam && !["false", "0", "disable", "disabled"].includes(sslParam.toLowerCase());
+  // MySQL 8 (caching_sha2_password) tanpa TLS butuh RSA public key server untuk login pertama
+  // setelah server restart. Diizinkan otomatis bila koneksi tidak memakai SSL (mis. lokal/Docker);
+  // dengan SSL tidak diperlukan. Bisa dipaksa lewat ?allowPublicKeyRetrieval=true|false.
+  const pkParam = url.searchParams.get("allowPublicKeyRetrieval");
+  const allowPublicKeyRetrieval = pkParam != null ? pkParam === "true" : !ssl;
   return {
     host: url.hostname,
     port: url.port ? Number(url.port) : 3306,
@@ -21,6 +26,7 @@ export function poolConfigFromUrl(raw: string) {
     // Pool kecil cukup untuk serverless (tiap instance Vercel berumur pendek).
     connectionLimit: Number(process.env.DATABASE_POOL_MAX) || 5,
     ...(ssl ? { ssl: { rejectUnauthorized: sslParam !== "accept_invalid_certs" } } : {}),
+    allowPublicKeyRetrieval,
     // Simpan & baca DATETIME sebagai UTC.
     timezone: "Z",
   };

@@ -9,11 +9,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ListToolbar } from "@/components/admin/list-toolbar";
 import { Pagination } from "@/components/admin/pagination";
 import { StatusBadge } from "@/components/admin/status-badge";
+import { CollectionRowActions } from "@/components/admin/row-actions";
 import { getCollection, type ListColumn } from "@/content/collections";
 import { labelOf } from "@/lib/i18n";
 import { isImage } from "@/lib/media";
 import { listItems } from "@/server/repo/collections";
-import { requirePageUser } from "@/server/session";
+import { allowedActions, requirePageModule } from "@/server/admin-menu";
 
 export async function generateMetadata({ params }: PageProps<"/admin/c/[type]">): Promise<Metadata> {
   const { type } = await params;
@@ -58,8 +59,9 @@ function Cell({ col, row, options }: { col: ListColumn; row: any; options?: Map<
 }
 
 export default async function CollectionListPage({ params, searchParams }: PageProps<"/admin/c/[type]">) {
-  await requirePageUser();
   const { type } = await params;
+  const user = await requirePageModule(`c:${type}`);
+  const can = await allowedActions(user, `c:${type}`);
   const def = getCollection(type);
   if (!def) notFound();
   const sp = await searchParams;
@@ -87,6 +89,7 @@ export default async function CollectionListPage({ params, searchParams }: PageP
           </p>
         </div>
         {def.orderable &&
+          can.update &&
           (reorderHref ? (
             <Button asChild color="neutral" variant="secondary">
               <Link href={reorderHref}>
@@ -96,11 +99,13 @@ export default async function CollectionListPage({ params, searchParams }: PageP
           ) : (
             <span className="text-xs text-muted-foreground">Pilih {def.reorderScope} untuk mengatur urutan</span>
           ))}
-        <Button asChild>
-          <Link href={`/admin/c/${type}/new`}>
-            <Plus /> Tambah {def.singular.toLowerCase()}
-          </Link>
-        </Button>
+        {can.create && (
+          <Button asChild>
+            <Link href={`/admin/c/${type}/new`}>
+              <Plus /> Tambah {def.singular.toLowerCase()}
+            </Link>
+          </Button>
+        )}
       </div>
 
       <ListToolbar hasStatus={def.hasStatus} filters={def.adminFilters} />
@@ -113,16 +118,19 @@ export default async function CollectionListPage({ params, searchParams }: PageP
               {def.columns.map((c) => (
                 <TableHead key={c.path}>{c.label}</TableHead>
               ))}
+              <TableHead className="w-24 text-right">Aksi</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {result.items.length === 0 && (
               <TableRow>
-                <TableCell colSpan={def.columns.length + 1} className="py-12 text-center text-muted-foreground">
+                <TableCell colSpan={def.columns.length + (def.orderable ? 2 : 1)}className="py-12 text-center text-muted-foreground">
                   Belum ada data.{" "}
-                  <Link href={`/admin/c/${type}/new`} className="text-primary hover:underline">
-                    Tambah sekarang
-                  </Link>
+                  {can.create && (
+                    <Link href={`/admin/c/${type}/new`} className="text-primary hover:underline">
+                      Tambah sekarang
+                    </Link>
+                  )}
                 </TableCell>
               </TableRow>
             )}
@@ -140,6 +148,16 @@ export default async function CollectionListPage({ params, searchParams }: PageP
                     )}
                   </TableCell>
                 ))}
+                <TableCell className="text-right">
+                  <CollectionRowActions
+                    type={type}
+                    id={row.id}
+                    name={titleCol >= 0 ? String(labelOf(getPath(row, def.columns[titleCol].path)) || def.singular) : def.singular}
+                    singular={def.singular}
+                    canUpdate={can.update}
+                    canDelete={can.delete}
+                  />
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>

@@ -7,7 +7,7 @@ import { StatusBadge } from "@/components/admin/status-badge";
 import { cn } from "@/lib/utils";
 import { prisma } from "@/lib/prisma";
 import type { FormSource, SubmissionStatus } from "@/generated/prisma/enums";
-import { requirePageUser } from "@/server/session";
+import { requirePageModule } from "@/server/admin-menu";
 import { SOURCE_LABEL } from "./labels";
 
 export const metadata: Metadata = { title: "Form masuk" };
@@ -15,7 +15,7 @@ export const metadata: Metadata = { title: "Form masuk" };
 const PAGE_SIZE = 25;
 
 export default async function SubmissionsPage({ searchParams }: PageProps<"/admin/submissions">) {
-  await requirePageUser();
+  await requirePageModule("sys:submissions");
   const sp = await searchParams;
   const status = typeof sp.status === "string" && ["NEW", "IN_PROGRESS", "CLOSED"].includes(sp.status) ? sp.status : undefined;
   const source = typeof sp.source === "string" && sp.source in SOURCE_LABEL ? sp.source : undefined;

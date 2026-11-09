@@ -5,11 +5,11 @@ import { parseLang } from "@/lib/i18n";
 import { applyExtras } from "@/server/public/extras";
 import { serializeDoc } from "@/server/public/serialize";
 import { loadSingleton } from "@/server/repo/singletons";
-import { requirePageUser } from "@/server/session";
+import { requirePageModule } from "@/server/admin-menu";
 
 export default async function PreviewSingletonPage({ params, searchParams }: PageProps<"/admin/preview/s/[key]">) {
-  await requirePageUser();
   const { key } = await params;
+  await requirePageModule(`s:${key}`);
   const lang = parseLang((await searchParams).lang as string | undefined);
   const def = getSingleton(key);
   if (!def) notFound();

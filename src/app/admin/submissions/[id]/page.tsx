@@ -4,12 +4,12 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { prisma } from "@/lib/prisma";
-import { requirePageUser } from "@/server/session";
+import { canDo, requirePageModule } from "@/server/admin-menu";
 import { SOURCE_LABEL } from "../labels";
 import { SubmissionActions } from "./submission-actions";
 
 export default async function SubmissionDetailPage({ params }: PageProps<"/admin/submissions/[id]">) {
-  const user = await requirePageUser();
+  const user = await requirePageModule("sys:submissions");
   const { id } = await params;
   const s = await prisma.formSubmission.findUnique({ where: { id } });
   if (!s) notFound();
@@ -64,7 +64,7 @@ export default async function SubmissionDetailPage({ params }: PageProps<"/admin
             </p>
           </CardContent>
         </Card>
-        <SubmissionActions id={s.id} status={s.status} notes={s.notes ?? ""} canDelete={user.role === "ADMIN"} />
+        <SubmissionActions id={s.id} status={s.status} notes={s.notes ?? ""} canDelete={await canDo(user, "sys:submissions", "delete")} />
       </div>
     </div>
   );

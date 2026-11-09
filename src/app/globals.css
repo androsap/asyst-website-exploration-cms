@@ -241,6 +241,16 @@
   background-color: var(--neutral300);
 }
 
+/* Halaman login: hilangkan latar biru autofill browser agar field terisi tetap
+   memakai warna kotak (neutral50, atau putih saat fokus). */
+.login-input:-webkit-autofill,
+.login-input:-webkit-autofill:hover,
+.login-input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--neutral900);
+  caret-color: var(--neutral900);
+  transition: background-color 600000s 0s, color 600000s 0s;
+}
+
 /* Chevron <select> native (ikon lucide ChevronDown, warna neutral400) */
 .atlas-select {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23898c94' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");

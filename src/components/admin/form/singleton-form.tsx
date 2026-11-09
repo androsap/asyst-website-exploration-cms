@@ -15,6 +15,7 @@ import type { Lang } from "@/lib/i18n";
 import { getSingleton } from "@/content/singletons";
 import { discardSingletonAction, previewLinkAction, saveSingletonAction } from "@/server/actions/content";
 import { ConfirmButton } from "../confirm-button";
+import { StickyBar } from "../sticky-bar";
 import { EditLangProvider, useAdminConfig } from "./context";
 import { FieldsRenderer } from "./fields-renderer";
 import { LangTabs } from "./lang-tabs";
@@ -30,6 +31,7 @@ export function SingletonForm({
   updatedAt,
   hasPublished,
   dirty,
+  perms,
 }: {
   slug: string;
   initialValues: Record<string, unknown>;
@@ -37,6 +39,8 @@ export function SingletonForm({
   updatedAt: string | null;
   hasPublished: boolean;
   dirty: boolean;
+  /** save = Ubah, publish = Terbitkan (Manajemen Role). */
+  perms: { save: boolean; publish: boolean };
 }) {
   const def = getSingleton(slug)!;
   const router = useRouter();
@@ -91,9 +95,9 @@ export function SingletonForm({
 
           <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
             <div className="min-w-0 space-y-4">
-              <div className="sticky top-16 z-20 -mx-1 flex items-center justify-between gap-2 bg-background/95 px-1 py-2 backdrop-blur">
+              <StickyBar className="-mx-4 flex items-center justify-between gap-2 bg-background px-4 py-2">
                 <LangTabs value={lang} onChange={setLang} />
-              </div>
+              </StickyBar>
               <Card>
                 <CardContent className="pt-2">
                   <FieldsRenderer fields={def.fields} />
@@ -111,14 +115,20 @@ export function SingletonForm({
                     <p>Terbit terakhir: {fmt(publishedAt)}</p>
                     <p>Disimpan terakhir: {fmt(updatedAt)}</p>
                   </div>
-                  {def.draftable ? (
+                  {!perms.save ? (
+                    <p className="rounded-md bg-[var(--neutral50)] px-3 py-2 text-xs text-muted-foreground">
+                      Role Anda hanya bisa melihat halaman ini.
+                    </p>
+                  ) : def.draftable ? (
                     <div className="flex flex-col gap-2">
                       <Button type="submit" color="neutral" variant="secondary" disabled={pending}>
                         {pending ? <Spinner size="xs" className="text-current" label="Memproses" /> : <Save />} Simpan draft
                       </Button>
-                      <Button type="button" disabled={pending} onClick={() => save(true)}>
-                        <Send /> Simpan & publish
-                      </Button>
+                      {perms.publish && (
+                        <Button type="button" disabled={pending} onClick={() => save(true)}>
+                          <Send /> Simpan & publish
+                        </Button>
+                      )}
                       {hasPublished && dirty && (
                         <ConfirmButton
                           color="neutral" variant="tertiary"

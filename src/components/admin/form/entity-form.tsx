@@ -21,12 +21,16 @@ import {
 } from "@/server/actions/content";
 import type { Status } from "@/server/repo/collections";
 import { ConfirmButton } from "../confirm-button";
+import { StickyBar } from "../sticky-bar";
 import { StatusBadge } from "../status-badge";
 import { EditLangProvider, useAdminConfig } from "./context";
 import { DateTimeLocalInput, FieldsRenderer } from "./fields-renderer";
 import { LangTabs } from "./lang-tabs";
 import { invalidateRefOptions } from "./ref-options";
 import { applyServerErrors, onInvalid, useContentForm } from "./use-content-form";
+
+/** Aksi yang diizinkan untuk user (lihat Manajemen Role). Server tetap memeriksa ulang. */
+export type FormPerms = { save: boolean; publish: boolean; delete: boolean };
 
 export type EntityMeta = {
   status?: Status;
@@ -44,11 +48,13 @@ export function EntityForm({
   id,
   initialValues,
   meta,
+  perms,
 }: {
   type: string;
   id: string | null;
   initialValues: Record<string, unknown>;
   meta: EntityMeta;
+  perms: FormPerms;
 }) {
   const def = getCollection(type)!;
   const router = useRouter();
@@ -128,10 +134,10 @@ export function EntityForm({
 
           <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
             <div className="min-w-0 space-y-4">
-              <div className="sticky top-16 z-20 -mx-1 flex items-center justify-between gap-2 bg-background/95 px-1 py-2 backdrop-blur">
+              <StickyBar className="-mx-4 flex items-center justify-between gap-2 bg-background px-4 py-2">
                 <LangTabs value={lang} onChange={setLang} />
                 <span className="hidden text-xs text-muted-foreground sm:block">Field non-teks dipakai bersama kedua bahasa.</span>
-              </div>
+              </StickyBar>
               <Card>
                 <CardContent className="pt-2">
                   <FieldsRenderer fields={def.fields} />
@@ -145,29 +151,36 @@ export function EntityForm({
                   <CardTitle className="text-subtitle-sm">Publikasi</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {def.hasStatus && (
+                  {def.hasStatus && perms.publish && (
                     <div className="space-y-1.5">
                       <Label htmlFor="publishedAt">Tanggal terbit</Label>
                       <DateTimeLocalInput id="publishedAt" value={publishedAt} onChange={setPublishedAt} />
                       <p className="text-xs text-muted-foreground">Kosongkan = saat dipublish. Tanggal mendatang = terjadwal.</p>
                     </div>
                   )}
+                  {!perms.save && (
+                    <p className="rounded-md bg-[var(--neutral50)] px-3 py-2 text-xs text-muted-foreground">
+                      Role Anda hanya bisa melihat data ini.
+                    </p>
+                  )}
                   <div className="flex flex-col gap-2">
-                    <Button type="submit" color="brand" variant={def.hasStatus && status !== "PUBLISHED" ? "secondary" : "primary"} disabled={pending}>
+                    {perms.save && (
+                    <Button type="submit" color="brand" variant={def.hasStatus && status !== "PUBLISHED" && perms.publish ? "secondary" : "primary"} disabled={pending}>
                       {pending ? <Spinner size="xs" className="text-current" label="Memproses" /> : <Save />}
                       {def.hasStatus && status !== "PUBLISHED" ? "Simpan draft" : "Simpan"}
                     </Button>
-                    {def.hasStatus && status !== "PUBLISHED" && (
+                    )}
+                    {perms.save && perms.publish && def.hasStatus && status !== "PUBLISHED" && (
                       <Button type="button" disabled={pending} onClick={() => save("PUBLISHED")}>
                         <Send /> Simpan & publish
                       </Button>
                     )}
-                    {def.hasStatus && id && status === "PUBLISHED" && (
+                    {perms.publish && def.hasStatus && id && status === "PUBLISHED" && (
                       <Button type="button" color="neutral" variant="secondary" disabled={pending} onClick={() => changeStatus("DRAFT")}>
                         <Undo2 /> Unpublish (jadi draft)
                       </Button>
                     )}
-                    {def.hasStatus && id && status !== "ARCHIVED" && (
+                    {perms.publish && def.hasStatus && id && status !== "ARCHIVED" && (
                       <Button type="button" color="neutral" variant="tertiary" size="sm" disabled={pending} onClick={() => changeStatus("ARCHIVED")}>
                         Arsipkan
                       </Button>
@@ -205,6 +218,7 @@ export function EntityForm({
                   <CardContent className="space-y-1 pt-4 text-xs text-muted-foreground">
                     <p>Dibuat: {fmt(meta.createdAt)}</p>
                     <p>Diubah: {fmt(meta.updatedAt)}</p>
+                    {perms.delete && (
                     <ConfirmButton
                       color="danger" variant="tertiary"
                       size="sm"
@@ -223,6 +237,7 @@ export function EntityForm({
                     >
                       <Trash2 /> Hapus
                     </ConfirmButton>
+                    )}
                   </CardContent>
                 </Card>
               )}

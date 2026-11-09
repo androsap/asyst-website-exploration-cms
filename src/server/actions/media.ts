@@ -7,6 +7,7 @@ import { del } from "@vercel/blob";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/server/session";
+import { requireModule } from "@/server/admin-menu";
 import { ValidationError } from "@/server/repo/collections";
 import { run } from "./result";
 
@@ -53,7 +54,7 @@ function toItem(m: Awaited<ReturnType<typeof prisma.media.findFirstOrThrow>>): M
 
 export async function createMediaAction(input: z.input<typeof createSchema>) {
   return run(async () => {
-    const user = await requireUser();
+    const user = await requireModule("sys:media", "create");
     const data = createSchema.parse(input);
     const m = await prisma.media.create({ data: { ...data, uploadedById: user.id } });
     revalidatePath("/admin/media");
@@ -90,7 +91,7 @@ export async function getMediaManyAction(ids: string[]) {
 
 export async function updateMediaAction(id: string, input: { alt: unknown; caption?: unknown }) {
   return run(async () => {
-    await requireUser();
+    await requireModule("sys:media", "update");
     const alt = lSchema.parse(input.alt);
     const caption = input.caption ? lSchema.parse(input.caption) : undefined;
     const m = await prisma.media.update({ where: { id }, data: { alt, ...(caption ? { caption } : {}) } });
@@ -142,7 +143,7 @@ async function mediaUsage(id: string): Promise<string[]> {
 
 export async function deleteMediaAction(id: string) {
   return run(async () => {
-    await requireUser();
+    await requireModule("sys:media", "delete");
     const m = await prisma.media.findUnique({ where: { id } });
     if (!m) throw new ValidationError("Media tidak ditemukan.");
     const used = await mediaUsage(id);

@@ -15,35 +15,51 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ConfirmButton } from "@/components/admin/confirm-button";
-import { nativeSelectClass } from "@/components/admin/form/field-shell";
+import { ChoiceField } from "@/components/admin/form/choice-field";
 import { createUserAction, deleteUserAction, updateUserAction } from "@/server/actions/users";
 
 type UserRow = {
   id: string;
   name: string;
   email: string;
-  role: "ADMIN" | "EDITOR";
+  roleKey: string;
+  isSuperAdmin: boolean;
   isActive: boolean;
   lastLoginAt: string | null;
   createdAt: string;
 };
 
-type FormValues = { name: string; email: string; role: "ADMIN" | "EDITOR"; isActive: boolean; password: string };
+type RoleOption = { key: string; name: string; isSuperAdmin: boolean };
+type FormValues = { name: string; email: string; roleKey: string; isActive: boolean; password: string };
 
-function UserDialog({ user, open, onOpenChange }: { user: UserRow | null; open: boolean; onOpenChange: (v: boolean) => void }) {
+function UserDialog({
+  user,
+  roles,
+  meIsSuperAdmin,
+  open,
+  onOpenChange,
+}: {
+  user: UserRow | null;
+  roles: RoleOption[];
+  meIsSuperAdmin: boolean;
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+}) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const form = useForm<FormValues>({
     values: {
       name: user?.name ?? "",
       email: user?.email ?? "",
-      role: user?.role ?? "EDITOR",
+      // Pengguna baru: role dipilih eksplisit (tidak ada role bawaan).
+      roleKey: user?.roleKey ?? "",
       isActive: user?.isActive ?? true,
       password: "",
     },
   });
   const { register, handleSubmit, setError, formState, setValue, control } = form;
   const isActive = useWatch({ control, name: "isActive" });
+  const roleKey = useWatch({ control, name: "roleKey" });
 
   const submit = handleSubmit((values) =>
     start(async () => {
@@ -80,11 +96,20 @@ function UserDialog({ user, open, onOpenChange }: { user: UserRow | null; open: 
             {err("email")}
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="u-role">Role</Label>
-            <select id="u-role" className={nativeSelectClass} {...register("role")}>
-              <option value="EDITOR">EDITOR</option>
-              <option value="ADMIN">ADMIN</option>
-            </select>
+            <Label id="u-role-label">Role</Label>
+            <ChoiceField
+              id="u-role"
+              ariaLabel="Role"
+              value={roleKey}
+              onChange={(v) => setValue("roleKey", v, { shouldDirty: true, shouldValidate: true })}
+              options={roles.map((r) => ({
+                value: r.key,
+                label: r.name,
+                disabled: r.isSuperAdmin && !meIsSuperAdmin,
+              }))}
+            />
+            <input type="hidden" {...register("roleKey", { required: "Pilih role" })} />
+            {err("roleKey")}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="u-password">{user ? "Password baru (opsional)" : "Password"}</Label>
@@ -112,13 +137,27 @@ function UserDialog({ user, open, onOpenChange }: { user: UserRow | null; open: 
   );
 }
 
-export function UsersManager({ users, meId }: { users: UserRow[]; meId: string }) {
+export function UsersManager({
+  users,
+  roles,
+  meId,
+  meIsSuperAdmin,
+  can,
+}: {
+  users: UserRow[];
+  roles: RoleOption[];
+  meId: string;
+  meIsSuperAdmin: boolean;
+  can: { create: boolean; update: boolean; delete: boolean };
+}) {
+  const roleName = new Map(roles.map((r) => [r.key, r.name]));
   const router = useRouter();
   const [editing, setEditing] = useState<UserRow | null>(null);
   const [open, setOpen] = useState(false);
 
   return (
     <>
+      {can.create && (
       <div className="flex justify-end">
         <Button
           onClick={() => {
@@ -129,6 +168,7 @@ export function UsersManager({ users, meId }: { users: UserRow[]; meId: string }
           <Plus /> Tambah pengguna
         </Button>
       </div>
+      )}
       <Card className="overflow-hidden py-0">
         <Table>
           <TableHeader>
@@ -150,7 +190,9 @@ export function UsersManager({ users, meId }: { users: UserRow[]; meId: string }
                   <div className="text-xs text-muted-foreground">{u.email}</div>
                 </TableCell>
                 <TableCell>
-                  <Badge color={u.role === "ADMIN" ? "primary" : "neutral"} variant="light">{u.role}</Badge>
+                  <Badge color={u.isSuperAdmin ? "primary" : "neutral"} variant="light">
+                    {roleName.get(u.roleKey) ?? u.roleKey}
+                  </Badge>
                 </TableCell>
                 <TableCell className="text-sm">{u.isActive ? "Aktif" : <span className="text-muted-foreground">Nonaktif</span>}</TableCell>
                 <TableCell className="text-xs text-muted-foreground">
@@ -158,6 +200,7 @@ export function UsersManager({ users, meId }: { users: UserRow[]; meId: string }
                 </TableCell>
                 <TableCell>
                   <div className="flex justify-end gap-1">
+                    {can.update && (meIsSuperAdmin || !u.isSuperAdmin) && (
                     <Button
                       size="icon-sm"
                       color="neutral" variant="tertiary"
@@ -169,7 +212,8 @@ export function UsersManager({ users, meId }: { users: UserRow[]; meId: string }
                     >
                       <Pencil />
                     </Button>
-                    {u.id !== meId && (
+                    )}
+                    {can.delete && (meIsSuperAdmin || !u.isSuperAdmin) && u.id !== meId && (
                       <ConfirmButton
                         size="icon-sm"
                         color="danger" variant="tertiary"
@@ -194,7 +238,7 @@ export function UsersManager({ users, meId }: { users: UserRow[]; meId: string }
           </TableBody>
         </Table>
       </Card>
-      <UserDialog user={editing} open={open} onOpenChange={setOpen} />
+      <UserDialog user={editing} roles={roles} meIsSuperAdmin={meIsSuperAdmin} open={open} onOpenChange={setOpen} />
     </>
   );
 }

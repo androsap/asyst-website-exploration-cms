@@ -14,6 +14,7 @@ import { saveItem, type Status } from "../src/server/repo/collections";
 import { saveSingleton } from "../src/server/repo/singletons";
 import { SEED_SINGLETONS } from "./seed-data/singletons";
 import { seedContent } from "./seed-data/content";
+import { resetContent } from "./shared";
 
 async function seedAdmin() {
   const email = process.env.SEED_ADMIN_EMAIL?.trim().toLowerCase();
@@ -27,33 +28,17 @@ async function seedAdmin() {
     if (process.env.SEED_ADMIN_RESET_PASSWORD === "true") {
       await prisma.user.update({
         where: { email },
-        data: { passwordHash: await bcrypt.hash(password, 12), role: "ADMIN", isActive: true },
+        data: { passwordHash: await bcrypt.hash(password, 12), roleKey: "ADMIN", isActive: true },
       });
       console.log(`✔ Password admin ${email} direset`);
     } else console.log(`• Admin ${email} sudah ada (password tidak diubah)`);
     return existing.id;
   }
   const user = await prisma.user.create({
-    data: { email, name, role: "ADMIN", passwordHash: await bcrypt.hash(password, 12) },
+    data: { email, name, roleKey: "ADMIN", passwordHash: await bcrypt.hash(password, 12) },
   });
   console.log(`✔ Admin ${email} dibuat`);
   return user.id;
-}
-
-async function resetContent() {
-  // Hapus semua tabel konten (termasuk tabel join implisit "_…") kecuali User & riwayat migrasi.
-  // FK check dimatikan di koneksi yang sama (transaction) agar urutan penghapusan tidak penting.
-  const tables = await prisma.$queryRawUnsafe<{ t: string }[]>(
-    `SELECT TABLE_NAME AS t FROM information_schema.TABLES
-     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_TYPE = 'BASE TABLE'
-       AND TABLE_NAME NOT IN ('User', '_prisma_migrations', 'FormSubmission')`,
-  );
-  await prisma.$transaction(async (tx) => {
-    await tx.$executeRawUnsafe("SET FOREIGN_KEY_CHECKS = 0");
-    for (const { t } of tables) await tx.$executeRawUnsafe(`DELETE FROM \`${t.replace(/`/g, "")}\``);
-    await tx.$executeRawUnsafe("SET FOREIGN_KEY_CHECKS = 1");
-  });
-  console.log(`✔ Konten lama dihapus (${tables.length} tabel)`);
 }
 
 export type SeedApi = {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useId, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   closestCenter,
@@ -55,6 +55,7 @@ export function SortableList({ type, rows: initial }: { type: string; rows: Sort
   const [rows, setRows] = useState(initial);
   const [dirty, setDirty] = useState(false);
   const [pending, start] = useTransition();
+  const dndId = useId();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -84,7 +85,7 @@ export function SortableList({ type, rows: initial }: { type: string; rows: Sort
 
   return (
     <div className="space-y-3">
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+      <DndContext id={dndId} sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={rows.map((r) => r.id)} strategy={verticalListSortingStrategy}>
           <ul className="overflow-hidden rounded-lg border">
             {rows.map((row, i) => (

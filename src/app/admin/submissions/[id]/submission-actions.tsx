@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ConfirmButton } from "@/components/admin/confirm-button";
-import { nativeSelectClass } from "@/components/admin/form/field-shell";
+import { ChoiceField } from "@/components/admin/form/choice-field";
 import { deleteSubmissionAction, updateSubmissionAction } from "@/server/actions/submissions";
 
 export function SubmissionActions({
@@ -37,11 +37,17 @@ export function SubmissionActions({
       <CardContent className="space-y-3">
         <div className="space-y-1.5">
           <Label htmlFor="status">Status</Label>
-          <select id="status" className={nativeSelectClass} value={status} onChange={(e) => setStatus(e.target.value)}>
-            <option value="NEW">Baru</option>
-            <option value="IN_PROGRESS">Diproses</option>
-            <option value="CLOSED">Selesai</option>
-          </select>
+          <ChoiceField
+            id="status"
+            ariaLabel="Status"
+            value={status}
+            onChange={setStatus}
+            options={[
+              { value: "NEW", label: "Baru" },
+              { value: "IN_PROGRESS", label: "Diproses" },
+              { value: "CLOSED", label: "Selesai" },
+            ]}
+          />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="notes">Catatan internal</Label>

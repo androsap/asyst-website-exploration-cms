@@ -3,6 +3,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { NextResponse, type NextRequest } from "next/server";
 import { getCurrentUser } from "@/server/session";
+import { canDo } from "@/server/admin-menu";
 import { blobEnabled } from "@/lib/env";
 import { ALLOWED_MIME, MAX_UPLOAD_BYTES } from "@/lib/media";
 import { slugify } from "@/lib/slug";
@@ -13,7 +14,10 @@ export async function POST(req: NextRequest) {
   if (blobEnabled() || process.env.VERCEL) {
     return NextResponse.json({ error: "Upload lokal nonaktif; gunakan Vercel Blob." }, { status: 400 });
   }
-  if (!(await getCurrentUser())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!(await canDo(user, "sys:media", "create")))
+    return NextResponse.json({ error: "Anda tidak punya izin upload media." }, { status: 403 });
 
   const form = await req.formData();
   const file = form.get("file");

@@ -7,11 +7,11 @@ import { SortableList } from "@/components/admin/sortable-list";
 import { getCollection } from "@/content/collections";
 import { labelOf } from "@/lib/i18n";
 import { delegate } from "@/server/repo/collections";
-import { requirePageUser } from "@/server/session";
+import { requirePageModule } from "@/server/admin-menu";
 
 export default async function ReorderPage({ params, searchParams }: PageProps<"/admin/c/[type]/reorder">) {
-  await requirePageUser();
   const { type } = await params;
+  await requirePageModule(`c:${type}`, "update");
   const def = getCollection(type);
   if (!def || !def.orderable) notFound();
   const sp = await searchParams;
